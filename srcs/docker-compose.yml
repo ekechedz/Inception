@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  mariadb:
+    container_name: mariadb
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+    image: mariadb
+    ports: 
+      - "3306:3306"
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    secrets:
+      - db_password
+      - db_root_password
+    networks:
+      - my_network
+    volumes:
+      - mariadb:/var/lib/mysql
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx
+    ports: 
+      - "443:443"
+    env_file:
+      - .env
+    depends_on:
+      - wordpress
+    restart: unless-stopped
+    networks:
+      - my_network
+    volumes:
+      - wordpress:/var/www/wordpress
+      - ./secrets/inception.crt:/etc/nginx/ssl/inception.crt
+      - ./secrets/inception.key:/etc/nginx/ssl/inception.key
+
+  wordpress:
+    container_name: wordpress
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress
+    env_file:
+      - .env
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - my_network
+    volumes:
+      - wordpress:/var/www/wordpress
+
+networks:
+  my_network:
+
+volumes:
+  mariadb:
+    name: mariadb
+  wordpress:
+    name: wordpress
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+
