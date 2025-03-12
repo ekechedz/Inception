@@ -1,8 +1,13 @@
-FROM nginx:latest
+FROM debian:bullseye
 
-# Copy custom configuration
-COPY ./conf/nginx.conf /etc/nginx/nginx.conf
-COPY ./conf/default.conf /etc/nginx/conf.d/default.conf
+RUN apt-get update -y && apt-get upgrade -y
 
-# Expose HTTP and HTTPS ports
-EXPOSE 80 443
+RUN apt-get install -y nginx openssl
+
+RUN rm -rf /var/lib/apt/lists/*
+
+COPY conf/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 443 80
+
+CMD ["nginx", "-g", "daemon off;"]

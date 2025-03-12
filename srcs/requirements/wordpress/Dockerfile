@@ -1,7 +1,15 @@
-FROM wordpress:latest
+FROM debian:bullseye
 
-# Install PHP extensions for WordPress
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev     && docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install gd
+RUN mkdir -p /var/www/wordpress
 
-# Expose HTTP port for WordPress
-EXPOSE 80
+RUN apt-get update -y && apt-get upgrade -y
+
+RUN apt-get install -y wget php php7.4-fpm php-mysql mariadb-client curl netcat-traditional
+
+RUN rm -rf /var/lib/apt/lists/
+
+COPY tools/wordpress_conf.sh /usr/local/bin/wordpress_conf.sh
+
+RUN chmod +x /usr/local/bin/wordpress_conf.sh
+
+ENTRYPOINT ["/usr/local/bin/wordpress_conf.sh"]
