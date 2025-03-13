@@ -7,14 +7,14 @@ services:
       context: ./requirements/mariadb
       dockerfile: Dockerfile
     image: mariadb
-    ports: 
+    ports:
       - "3306:3306"
     env_file:
       - .env
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     secrets:
@@ -61,6 +61,12 @@ services:
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+    secrets:
+      - db_password
+      - db_root_password
+      - wp_admin_pw
+      - wp_user_pw
+      - mdb_pw
     networks:
       - my_network
     volumes:
@@ -80,4 +86,9 @@ secrets:
     file: ./secrets/db_password.txt
   db_root_password:
     file: ./secrets/db_root_password.txt
-
+  wp_admin_pw:
+    file: ./secrets/wp_admin_pw.txt
+  wp_user_pw:
+    file: ./secrets/wp_user_pw.txt
+  mdb_pw:
+    file: ./secrets/mdb_pw.txt

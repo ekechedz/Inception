@@ -1,6 +1,5 @@
 #!/bin/bash
 
-### WAIT FOR MARIADB SERVER TO BE RUNNING
 end_time=$((SECONDS + 10))
 while (( SECONDS < end_time )); do
     if nc -zq 1 mariadb 3306; then
@@ -17,22 +16,18 @@ if (( SECONDS >= end_time )); then
 fi
 
 ### INSTALL WordPress
-# install WordPress CLI (command line interface)
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 
-# make the wp command globally executable
 chmod +x wp-cli.phar
-mv wp-cli.phar /usr/local/bin/wp 
+mv wp-cli.phar /usr/local/bin/wp
 
-# go to WordPress directory and change its permission and owner so nginx can work with it
 cd /var/www/wordpress
 chmod -R 755 /var/www/wordpress/
 chown -R www-data:www-data /var/www/wordpress
 
-# download WordPress into /var/www/WordPress directory
 wp core download --allow-root
 
-# Pfade zu den Secrets-Dateien
+
 DB_PASSWORD=$(cat /run/secrets/mdb_pw)
 WP_ADMIN_PASSWORD=$(cat /run/secrets/wp_admin_pw)
 WP_USER_PASSWORD=$(cat /run/secrets/wp_user_pw)
