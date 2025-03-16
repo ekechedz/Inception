@@ -13,17 +13,39 @@ services:
       - .env
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MDB_PW: /run/secrets/mdb_pw
+      MDB_ROOT_PW: /run/secrets/mdb_root_pw
     secrets:
-      - db_password
-      - db_root_password
+      - mdb_pw
+      - mdb_root_pw
     networks:
       - my_network
     volumes:
       - mariadb:/var/lib/mysql
+
+  wordpress:
+    container_name: wordpress
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress
+    env_file:
+      - .env
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+    environment:
+      MDB_PW: /run/secrets/mdb_pw
+      WP_ADMIN_PW: /run/secrets/wp_admin_pw
+      WP_USER_PW: /run/secrets/wp_user_pw
+    secrets:
+      - mdb_pw
+      - wp_admin_pw
+      - wp_user_pw
+    networks:
+      - my_network
+    volumes:
+      - wordpress:/var/www/wordpress
 
   nginx:
     container_name: nginx
@@ -42,35 +64,8 @@ services:
       - my_network
     volumes:
       - wordpress:/var/www/wordpress
-      - ./secrets/inception.crt:/etc/nginx/ssl/inception.crt
-      - ./secrets/inception.key:/etc/nginx/ssl/inception.key
-
-  wordpress:
-    container_name: wordpress
-    build:
-      context: ./requirements/wordpress
-      dockerfile: Dockerfile
-    image: wordpress
-    env_file:
-      - .env
-    depends_on:
-      - mariadb
-    restart: unless-stopped
-    environment:
-      WORDPRESS_DB_HOST: mariadb:3306
-      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
-      WORDPRESS_DB_USER: ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
-    secrets:
-      - db_password
-      - db_root_password
-      - wp_admin_pw
-      - wp_user_pw
-      - mdb_pw
-    networks:
-      - my_network
-    volumes:
-      - wordpress:/var/www/wordpress
+      - ../secrets/inception.crt:/etc/nginx/ssl/inception.crt
+      - ../secrets/inception.key:/etc/nginx/ssl/inception.key
 
 networks:
   my_network:
@@ -78,17 +73,25 @@ networks:
 volumes:
   mariadb:
     name: mariadb
+    driver: local
+    driver_opts:
+      device: /home/ekechedz/data/mariadb
+      o: bind
+      type: none
   wordpress:
     name: wordpress
+    driver: local
+    driver_opts:
+      device: /home/ekechedz/data/wordpress
+      o: bind
+      type: none
 
 secrets:
-  db_password:
-    file: ./secrets/db_password.txt
-  db_root_password:
-    file: ./secrets/db_root_password.txt
-  wp_admin_pw:
-    file: ./secrets/wp_admin_pw.txt
-  wp_user_pw:
-    file: ./secrets/wp_user_pw.txt
   mdb_pw:
-    file: ./secrets/mdb_pw.txt
+    file: ../secrets/db_password.txt
+  mdb_root_pw:
+    file: ../secrets/db_root_password.txt
+  wp_admin_pw:
+    file: ../secrets/wp_root_password.txt
+  wp_user_pw:
+    file: ../secrets/wp_user_password.txt

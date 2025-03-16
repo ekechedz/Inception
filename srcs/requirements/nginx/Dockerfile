@@ -8,6 +8,6 @@ RUN rm -rf /var/lib/apt/lists/*
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 443
+EXPOSE 443 80
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,40 +1,63 @@
-NAME = inception
-DCOMPOSE = docker compose
-DCOMPOSE_FILE = docker-compose.yml
+.PHONY: all clean build run down logs restart init stop start status
 
-.PHONY: all up down restart build clean fclean re
+SECRETS_SCRIPT := ./srcs/secrets.sh
+ENV_FILE := ./srcs/.env
+SECRETS_DIR := ./secrets
+DATA_DIR := ../../data
 
-## Start the containers
-all: up
+all: build run
 
-## Start services in detached mode
-up:
-	@$(DCOMPOSE) -f $(DCOMPOSE_FILE) up -d
-	@echo "🚀 Inception started!"
+build: init
+	docker-compose -f srcs/docker-compose.yml build
 
-## Stop containers but keep data
+run:
+	@echo "\e[34mStarting containers ......\e[0m"
+	docker-compose -f srcs/docker-compose.yml up -d --force-recreate --build
+	@echo "\e[32mContainers started\e[0m"
+
 down:
-	@$(DCOMPOSE) -f $(DCOMPOSE_FILE) down
-	@echo "🛑 Inception stopped!"
+	@echo "\e[34mStopping and removing containers...\e[0m"
+	docker-compose -f srcs/docker-compose.yml down
+	@echo "\e[32mContainers stopped and removed. Volumes are still there.\e[0m"
 
-## Restart all services
-restart: down up
+clean: down
+	@echo "\e[34mCleaning up secrets and environment files...\e[0m"
+	@rm -fr $(SECRETS_DIR) || true
+	@rm -fr $(ENV_FILE) || true
+	@sudo rm -fr $(DATA_DIR) || true
+	@echo "\e[32mClean up complete\e[0m"
+	@echo "\e[34mRemoving Docker volumes...\e[0m"
+	@docker volume rm mariadb wordpress || true
+	@echo "\e[34mPruning Docker system...\e[0m"
+	@docker system prune --all --force
+	@echo "\e[32mPrune complete. Containers and Volumes were removed\e[0m"
 
-## Build or rebuild services
-build:
-	@$(DCOMPOSE) -f $(DCOMPOSE_FILE) build --no-cache
-	@echo "🔧 Services rebuilt!"
+logs:
+	docker-compose -f srcs/docker-compose.yml logs -f
 
-## Remove stopped containers and dangling images
-clean:
-	@docker system prune -f
-	@echo "🧹 Cleaned up unused Docker resources!"
+re: down run
 
-## Completely remove containers, images, volumes, and networks
-fclean:
-	@$(DCOMPOSE) -f $(DCOMPOSE_FILE) down -v
-	@docker system prune -a -f --volumes
-	@echo "🔥 Everything removed!"
+init:
+	@echo "Initializing Files and Credentials..."
+	@$(SECRETS_SCRIPT)
+	@echo "Initialization complete"
 
-## Rebuild everything from scratch
-re: fclean up
+stop:
+	@echo "Stopping all containers..."
+	docker stop $$(docker ps -q) > /dev/null 2>&1 || true
+	@echo "Containers stopped"
+
+start:
+	@echo "Starting stopped containers..."
+	docker-compose -f srcs/docker-compose.yml start
+	@echo "Containers started"
+
+status:
+	@echo "IMAGES OVERVIEW"
+	@docker images
+	@echo "CONTAINER OVERVIEW"
+	@docker ps -a
+	@echo "NETWORK OVERVIEW"
+	@docker network ls
+	@echo "CONTAINER LOGS"
+	@docker-compose -f srcs/docker-compose.yml logs
