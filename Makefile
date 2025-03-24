@@ -5,53 +5,67 @@ ENV_FILE := ./srcs/.env
 SECRETS_DIR := ./secrets
 DATA_DIR := ../../data
 
+# Default target: build and run the containers
 all: build run
 
+# Build the containers
 build: init
+	@echo "Building containers ......"
 	docker-compose -f srcs/docker-compose.yml build
+	@echo "Build complete"
 
+# Start the containers
 run:
-	@echo "\e[34mStarting containers ......\e[0m"
+	@echo "Starting containers ......"
 	docker-compose -f srcs/docker-compose.yml up -d --force-recreate --build
-	@echo "\e[32mContainers started\e[0m"
+	@echo "Containers started successfully"
 
+# Stop and remove the containers
 down:
-	@echo "\e[34mStopping and removing containers...\e[0m"
+	@echo "Stopping and removing containers..."
 	docker-compose -f srcs/docker-compose.yml down
-	@echo "\e[32mContainers stopped and removed. Volumes are still there.\e[0m"
+	@echo "Containers stopped and removed. Volumes are still there."
 
+# Clean up all the files and volumes
 clean: down
-	@echo "\e[34mCleaning up secrets and environment files...\e[0m"
+	@echo "Cleaning up secrets and environment files..."
 	@rm -fr $(SECRETS_DIR) || true
 	@rm -fr $(ENV_FILE) || true
 	@sudo rm -fr $(DATA_DIR) || true
-	@echo "\e[32mClean up complete\e[0m"
-	@echo "\e[34mRemoving Docker volumes...\e[0m"
+	@echo "Secrets and environment files removed"
+	@echo "Removing Docker volumes..."
 	@docker volume rm mariadb wordpress || true
-	@echo "\e[34mPruning Docker system...\e[0m"
+	@echo "Pruning Docker system..."
 	@docker system prune --all --force
-	@echo "\e[32mPrune complete. Containers and Volumes were removed\e[0m"
+	@echo "Prune complete. Containers and Volumes were removed"
 
+# View the logs of the containers
 logs:
+	@echo "Displaying logs..."
 	docker-compose -f srcs/docker-compose.yml logs -f
 
+# Rebuild and restart the containers
 re: down run
 
+# Initialize secrets and environment variables
 init:
 	@echo "Initializing Files and Credentials..."
 	@$(SECRETS_SCRIPT)
 	@echo "Initialization complete"
 
+# Stop all running containers
 stop:
 	@echo "Stopping all containers..."
 	docker stop $$(docker ps -q) > /dev/null 2>&1 || true
 	@echo "Containers stopped"
 
+# Start all stopped containers
 start:
 	@echo "Starting stopped containers..."
 	docker-compose -f srcs/docker-compose.yml start
 	@echo "Containers started"
 
+# Display system status and Docker info
 status:
 	@echo "IMAGES OVERVIEW"
 	@docker images

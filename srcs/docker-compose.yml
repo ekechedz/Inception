@@ -1,6 +1,13 @@
 version: '3.8'
 
+# -----------------------------------------
+# SERVICES
+# -----------------------------------------
+
 services:
+  # -----------------------------------------
+  # MariaDB (Database Service)
+  # -----------------------------------------
   mariadb:
     container_name: mariadb
     build:
@@ -8,10 +15,10 @@ services:
       dockerfile: Dockerfile
     image: mariadb
     ports:
-      - "3306:3306"
+      - "3306:3306"  # Exposing MySQL database port
     env_file:
       - .env
-    restart: unless-stopped
+    restart: unless-stopped  # Restart only if it crashes
     environment:
       MDB_PW: /run/secrets/mdb_pw
       MDB_ROOT_PW: /run/secrets/mdb_root_pw
@@ -21,8 +28,11 @@ services:
     networks:
       - my_network
     volumes:
-      - mariadb:/var/lib/mysql
+      - mariadb:/var/lib/mysql  # Persistent database storage
 
+  # -----------------------------------------
+  # WordPress (Application Service)
+  # -----------------------------------------
   wordpress:
     container_name: wordpress
     build:
@@ -32,7 +42,7 @@ services:
     env_file:
       - .env
     depends_on:
-      - mariadb
+      - mariadb  # Ensures MariaDB is running before WordPress starts
     restart: unless-stopped
     environment:
       MDB_PW: /run/secrets/mdb_pw
@@ -45,8 +55,11 @@ services:
     networks:
       - my_network
     volumes:
-      - wordpress:/var/www/wordpress
+      - wordpress:/var/www/wordpress  # Persistent storage for WordPress data
 
+  # -----------------------------------------
+  # Nginx (Web Server & Reverse Proxy)
+  # -----------------------------------------
   nginx:
     container_name: nginx
     build:
@@ -54,21 +67,29 @@ services:
       dockerfile: Dockerfile
     image: nginx
     ports:
-      - "443:443"
+      - "443:443"  # HTTPS
     env_file:
       - .env
     depends_on:
-      - wordpress
+      - wordpress  # Ensures WordPress is running before Nginx starts
     restart: unless-stopped
     networks:
       - my_network
     volumes:
-      - wordpress:/var/www/wordpress
-      - ../secrets/inception.crt:/etc/nginx/ssl/inception.crt
-      - ../secrets/inception.key:/etc/nginx/ssl/inception.key
+      - wordpress:/var/www/wordpress  # Serve WordPress files
+      - ../secrets/inception.crt:/etc/nginx/ssl/inception.crt  # SSL Certificate
+      - ../secrets/inception.key:/etc/nginx/ssl/inception.key  # SSL Key
+
+# -----------------------------------------
+# NETWORKS
+# -----------------------------------------
 
 networks:
   my_network:
+
+# -----------------------------------------
+# VOLUMES (Persistent Storage)
+# -----------------------------------------
 
 volumes:
   mariadb:
@@ -85,6 +106,10 @@ volumes:
       device: /home/ekechedz/data/wordpress
       o: bind
       type: none
+
+# -----------------------------------------
+# SECRETS (Securely Store Sensitive Data)
+# -----------------------------------------
 
 secrets:
   mdb_pw:
